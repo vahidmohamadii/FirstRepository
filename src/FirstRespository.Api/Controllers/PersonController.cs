@@ -1,6 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
+using FirstRespository.Api.Data;
 using FirstRespository.Api.Dtos.Person;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FirstRespository.Api.Controllers
@@ -9,107 +13,131 @@ namespace FirstRespository.Api.Controllers
     [Route("[controller]")]
     public sealed class PersonController : ControllerBase
     {
-        [HttpGet("")]
-        public IActionResult Get()
-        {
-            var response = Persons;
+        private readonly IMapper _mapper;
 
-            return Ok(response);
+        public PersonController(IMapper mapper)
+        {
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        [HttpGet("{id:int}" , Name = "FindRoute")]
-        public IActionResult Find([FromRoute] int id)
+        [HttpGet("")]
+        [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(List<PersonIndexDto>))]
+        public IActionResult Get()
         {
-            var response = Persons.FirstOrDefault(model => model.Id == id);
+            var personModelList = AppDbContext.Persons;
 
-            if (response is null)
+            //var personIndexDtoList = personModelList
+            //    .Select(model=> new PersonIndexDto() 
+            //    { 
+            //        Id= model.Id,
+            //        FullName = $"{model.FirstName} {model.LastName}",
+            //        Age = model.Age
+            //    })
+            //    .ToList();
+
+            var personIndexDtoList = _mapper.Map<List<PersonIndexDto>>(personModelList);
+
+            return Ok(personIndexDtoList);
+        }
+
+        [HttpGet("{Id:int}", Name = "FindRoute")]
+        [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(PersonDetailDto))]
+        [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
+        [ProducesResponseType(statusCode: StatusCodes.Status404NotFound, type: typeof(int))]
+        public IActionResult Find([FromRoute] FindPersonDto findPersonDto)
+        {
+            var personModel = AppDbContext.Persons.FirstOrDefault(model => model.Id == findPersonDto.Id);
+
+            if (personModel is null)
             {
-                return NotFound(id);
+                return NotFound(findPersonDto.Id);
             }
             else
             {
-                return Ok(response);
+                //var personDetailDto = new PersonDetailDto();
+
+                //personDetailDto.Id = personModel.Id;
+                //personDetailDto.FirstName = personModel.FirstName;
+                //personDetailDto.LastName = personModel.LastName;
+                //personDetailDto.FullName = $"{personModel.FirstName} {personModel.LastName}";
+                //personDetailDto.Age = personModel.Age;
+                //personDetailDto.BirthDateYear = DateTime.Now.AddYears(-personModel.Age).Year;
+
+                var personDetailDto = _mapper.Map<PersonDetailDto>(personModel);
+
+                return Ok(personDetailDto);
             }
 
         }
 
         [HttpPost("")]
+        [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(int))]
+        [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
         public IActionResult Create([FromBody] CreatePersonDto createPersonDto)
         {
-            var id = Persons.Max(model => model.Id) + 1;
+            //var personModel = new PersonModel();
 
-            Persons.Add(new PersonIndexDto()
-            {
-                Id= id,
-                FirstName = createPersonDto.FirstName,
-                LastName = createPersonDto.LastName,
-                Age = createPersonDto.Age
-            });
+            //personModel.Id = AppDbContext.Persons.Max(model => model.Id) + 1;
+            //personModel.FirstName = createPersonDto.FirstName;
+            //personModel.LastName = createPersonDto.LastName;
+            //personModel.Age = createPersonDto.Age;
 
-            return CreatedAtRoute("FindRoute", new { Id = id }, id);
+            var personModel = _mapper.Map<PersonModel>(createPersonDto);
+
+            personModel.Id = AppDbContext.Persons.Max(model => model.Id) + 1;
+
+            AppDbContext.Persons.Add(personModel);
+
+            return CreatedAtRoute("FindRoute", new { Id = personModel.Id }, personModel.Id);
         }
 
         [HttpPut("")]
+        [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(int))]
+        [ProducesResponseType(statusCode: StatusCodes.Status404NotFound, type: typeof(int))]
+        [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
         public IActionResult Edit([FromBody] EditPersonDto editPersonDto)
         {
-            var person = Persons
+            var personModel = AppDbContext
+                .Persons
                 .FirstOrDefault(model => model.Id == editPersonDto.Id);
 
-            if (person is null)
+            if (personModel is null)
             {
                 return NotFound(editPersonDto.Id);
             }
             else
             {
-                person.FirstName = editPersonDto.FirstName;
-                person.LastName = editPersonDto.LastName;
-                person.Age = editPersonDto.Age;
+                //personModel.FirstName = editPersonDto.FirstName;
+                //personModel.LastName = editPersonDto.LastName;
+                //personModel.Age = editPersonDto.Age;
+
+                personModel = _mapper.Map(editPersonDto, personModel);
 
                 return Ok(editPersonDto.Id);
             }
         }
 
-        [HttpDelete("{id:int}")]
-        public IActionResult Remove([FromRoute] int id)
+        [HttpDelete("{Id:int}")]
+        [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(int))]
+        [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
+        [ProducesResponseType(statusCode: StatusCodes.Status404NotFound, type: typeof(int))]
+        public IActionResult Remove([FromRoute] RemovePersonDto removePersonDto)
         {
-            var person = Persons.FirstOrDefault(model => model.Id == id);
+            var personModel = AppDbContext.Persons.FirstOrDefault(model => model.Id == removePersonDto.Id);
 
-            if (person is null)
+            if (personModel is null)
             {
-                return NotFound(id);
+                return NotFound(removePersonDto.Id);
             }
             else
             {
-                Persons.Remove(person);
+                AppDbContext.Persons.Remove(personModel);
 
-                return Ok(id);
+                return Ok(removePersonDto.Id);
             }
 
         }
 
-        private static List<PersonIndexDto> Persons { get; set; } = new List<PersonIndexDto>()
-        {
-            new  PersonIndexDto()
-            {
-                Id = 1,
-                FirstName = "Hamoon",
-                LastName = "Zehzad",
-                Age = 35
-            },
-            new  PersonIndexDto()
-            {
-                Id = 2,
-                FirstName = "Vahid",
-                LastName = "Mohammady",
-                Age = 32
-            },
-            new  PersonIndexDto()
-            {
-                Id = 3,
-                FirstName = "Vahideh",
-                LastName = "Ozkan",
-                Age = 99
-            },
-        };
+
     }
 }

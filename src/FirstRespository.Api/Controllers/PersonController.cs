@@ -4,6 +4,8 @@ using System.Linq;
 using AutoMapper;
 using FirstRespository.Api.Data;
 using FirstRespository.Api.Dtos.Person;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -71,6 +73,7 @@ namespace FirstRespository.Api.Controllers
         }
 
         [HttpPost("")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "User")]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(int))]
         [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
         public IActionResult Create([FromBody] CreatePersonDto createPersonDto)
@@ -92,6 +95,7 @@ namespace FirstRespository.Api.Controllers
         }
 
         [HttpPut("")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "User")]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(int))]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound, type: typeof(int))]
         [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
@@ -118,6 +122,7 @@ namespace FirstRespository.Api.Controllers
         }
 
         [HttpDelete("{Id:int}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Administrator")]
         [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(int))]
         [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest, type: typeof(ValidationProblemDetails))]
         [ProducesResponseType(statusCode: StatusCodes.Status404NotFound, type: typeof(int))]
@@ -138,6 +143,11 @@ namespace FirstRespository.Api.Controllers
 
         }
 
-
+        [HttpGet("secret")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme , Roles = "Administrator")]
+        public IActionResult Secret() 
+        {
+            return Ok("This is a secret message!");
+        }
     }
 }

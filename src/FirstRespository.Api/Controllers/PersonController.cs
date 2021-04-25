@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace FirstRespository.Api.Controllers
 {
     [ApiController]
@@ -16,9 +17,11 @@ namespace FirstRespository.Api.Controllers
     public sealed class PersonController : ControllerBase
     {
         private readonly IMapper _mapper;
-
+        
+        
         public PersonController(IMapper mapper)
         {
+         
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
